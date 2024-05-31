@@ -19,12 +19,14 @@ public class Ambiente {
         this.ambiente = new String[tamanhoAmbiente][tamanhoAmbiente];
     }
 
-    public void criarAmbiente(){
+    public void criarAmbiente() throws InterruptedException {
         List<Pessoa> pessoasList = new ArrayList<>();
+        List<Porta> portaList = new ArrayList<>();
 
         for (int i = 0; i < portas; i++) {
             var porta = new Porta("[" + i + "]");
             var posicaoValida = posicaoValida(false);
+            portaList.add(porta);
 
             ambiente[posicaoValida.get(0)][posicaoValida.get(1)] = porta.getNome();
             porta.setPosicao(posicaoValida);
@@ -38,18 +40,28 @@ public class Ambiente {
             ambiente[posicaoValida.get(0)][posicaoValida.get(1)] = pessoa.getNome();
             pessoa.setPosicao(posicaoValida);
         }
-        printMatrix();
+        imprimirSala();
 
         long startTime = System.currentTimeMillis();
-        long duration = 10000;
+        long duration = tempo * 1000L;
 
         while (System.currentTimeMillis() - startTime <= duration) {
-            try {
-                movimentarAmbiente(ambiente, pessoasList.get(0));
-                movimentarAmbiente(ambiente, pessoasList.get(1));
-                printMatrix();
-            }catch (Exception e){
+            for (Pessoa pessoa : pessoasList) {
+                movimentarAmbiente(ambiente, pessoa);
+            }
+            imprimirSala();
+            Thread.sleep(1000);
+        }
 
+        if (System.currentTimeMillis() - startTime > duration) {
+            System.out.println("Tempo acabou, saindo da sala.");
+
+            for (Pessoa pessoa : pessoasList) {
+                Porta portaProxima = encontrarPortaMaisProxima(pessoa, portaList);
+
+                while (pessoa.getPosicao().get(0) != portaProxima.getPosicao().get(0) || pessoa.getPosicao().get(1) != portaProxima.getPosicao().get(1)) {
+                    sair(portaProxima, pessoa);
+                }
             }
         }
     }
@@ -83,18 +95,18 @@ public class Ambiente {
     }
 
 
-    public void printMatrix() {
+    public void imprimirSala() {
         if (ambiente == null || ambiente.length == 0 || ambiente[0].length == 0) {
             System.out.println("A matriz está vazia.");
             return;
         }
         int tamanho = ambiente.length;
 
-        System.out.println("Matriz:");
+        System.out.println("Sala:");
         for (int i = 0; i < tamanho; i++) {
             for (int j = 0; j < tamanho; j++) {
                 if (ambiente[i][j] == null) {
-                    System.out.print("X \t");
+                    System.out.print("_ \t");
                 } else {
                     System.out.print(ambiente[i][j] + "\t");
                 }
@@ -103,7 +115,7 @@ public class Ambiente {
         }
     }
 
-    public void movimentarAmbiente(String[][] ambiente, Pessoa pessoa) throws InterruptedException{
+    public void movimentarAmbiente(String[][] ambiente, Pessoa pessoa) throws InterruptedException {
         Random rand = new Random();
         List<int[]> posicoesAdjacentes = new ArrayList<>();
         int linha = pessoa.getPosicao().get(0);
@@ -132,7 +144,84 @@ public class Ambiente {
                 flag = false;
             }
         }
-
-        Thread.sleep(1000);
     }
+
+    public static double calcularDistancia(List<Integer> posicao1, List<Integer> posicao2) {
+        int deltaX = posicao1.get(0) - posicao2.get(0);
+        int deltaY = posicao1.get(1) - posicao2.get(1);
+        return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    }
+
+    public static Porta encontrarPortaMaisProxima(Pessoa pessoa, List<Porta> portas) {
+        Porta portaMaisProxima = null;
+        double distanciaMinima = Double.MAX_VALUE;
+
+        for (Porta porta : portas) {
+            double distancia = calcularDistancia(pessoa.getPosicao(), porta.getPosicao());
+            if (distancia < distanciaMinima) {
+                distanciaMinima = distancia;
+                portaMaisProxima = porta;
+            }
+        }
+
+        return portaMaisProxima;
+    }
+
+    public void sair(Porta destino, Pessoa pessoa) {
+        int portaX = destino.posicao.get(0);
+        int portaY = destino.posicao.get(1);
+        int pessoaX = pessoa.posicao.get(0);
+        int pessoaY = pessoa.posicao.get(1);
+
+        while (pessoaX != portaX) {
+            if (pessoaX < portaX) {
+                pessoaX++;
+            } else {
+                pessoaX--;
+            }
+
+            if (pessoaX == portaX && pessoaY == portaY) {
+                ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
+                pessoa.posicao = List.of(pessoaX, pessoaY);
+                System.out.println(pessoa.nome + " saiu da sala pela porta "+destino.getNome());
+                imprimirSala();
+                break;
+            }
+
+            moverPessoaNaMatriz(pessoa, pessoaX, pessoaY);
+        }
+
+        while (pessoaY != portaY) {
+            if (pessoaY < portaY) {
+                pessoaY++;
+            } else {
+                pessoaY--;
+            }
+
+            if (pessoaX == portaX && pessoaY == portaY) {
+                ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
+                pessoa.posicao = List.of(pessoaX, pessoaY);
+                System.out.println(pessoa.nome + " saiu da sala pela porta "+destino.getNome());
+                imprimirSala();
+                break;
+            }
+
+            moverPessoaNaMatriz(pessoa, pessoaX, pessoaY);
+        }
+    }
+
+    private void moverPessoaNaMatriz(Pessoa pessoa, int newX, int newY) {
+        var flag = true;
+        while (flag) {
+            if (ambiente[newX][newY] == null) {
+                ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
+                pessoa.posicao = List.of(newX, newY);
+                ambiente[newX][newY] = pessoa.getNome();
+                imprimirSala();
+                flag = false;
+            }
+        }
+    }
+
 }
+
