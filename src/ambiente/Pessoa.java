@@ -5,6 +5,7 @@ import java.util.List;
 public class Pessoa {
     String nome;
     List<Integer> posicao;
+    Boolean saiu = false;
 
     public Pessoa(String nome) {
         this.nome = nome;

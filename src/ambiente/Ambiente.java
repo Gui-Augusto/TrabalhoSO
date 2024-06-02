@@ -7,7 +7,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class Ambiente {
     int pessoas;
-    int portas;
+    public int portas;
     int tamanhoAmbiente;
     int tempo;
     final String[][] ambiente;
@@ -56,15 +56,17 @@ public class Ambiente {
             }
             CompletableFuture.allOf(threads.toArray(new CompletableFuture[threads.size()])).join();
             imprimirSala();
-            checarBugBandido();
             Thread.sleep(1000);
         }
 
-        if (System.currentTimeMillis() - startTime > duration) {
+        System.out.println("Tempo acabou, saindo da sala.");
+
+        while (obterPessoasNaSala() > 0) {
             var threads = new ArrayList<CompletableFuture>();
-            System.out.println("Tempo acabou, saindo da sala.");
 
             for (Pessoa pessoa : pessoasList) {
+                if(pessoa.saiu)
+                    continue;
                 Porta portaProxima = encontrarPortaMaisProxima(pessoa, portaList);
                 var threadPessoa = CompletableFuture.runAsync(() -> {
 
@@ -76,6 +78,7 @@ public class Ambiente {
             }
             CompletableFuture.allOf(threads.toArray(new CompletableFuture[threads.size()])).join();
             imprimirSala();
+            Thread.sleep(1000);
         }
     }
 
@@ -187,24 +190,25 @@ public class Ambiente {
         int pessoaX = pessoa.posicao.get(0);
         int pessoaY = pessoa.posicao.get(1);
 
-        while (pessoaX != portaX) {
-            if (pessoaX < portaX) {
-                pessoaX++;
-            } else {
-                pessoaX--;
+        synchronized (mapa) {
+            if (pessoaX != portaX) {
+                if (pessoaX < portaX) {
+                    pessoaX++;
+                } else {
+                    pessoaX--;
+                }
+
+                if (pessoaX == portaX && pessoaY == portaY) {
+                    mapa[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
+                    pessoa.posicao = List.of(pessoaX, pessoaY);
+                    System.out.println(pessoa.nome + " saiu da sala pela porta " + destino.getNome());
+                    pessoa.saiu = true;
+                }
+
+                moverPessoaNaMatriz(pessoa, pessoaX, pessoaY);
+                return;
             }
 
-            if (pessoaX == portaX && pessoaY == portaY) {
-                ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
-                pessoa.posicao = List.of(pessoaX, pessoaY);
-                System.out.println(pessoa.nome + " saiu da sala pela porta " + destino.getNome());
-                break;
-            }
-
-            moverPessoaNaMatriz(pessoa, pessoaX, pessoaY);
-        }
-
-        while (pessoaY != portaY) {
             if (pessoaY < portaY) {
                 pessoaY++;
             } else {
@@ -215,7 +219,7 @@ public class Ambiente {
                 ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
                 pessoa.posicao = List.of(pessoaX, pessoaY);
                 System.out.println(pessoa.nome + " saiu da sala pela porta " + destino.getNome());
-                break;
+                pessoa.saiu = true;
             }
 
             moverPessoaNaMatriz(pessoa, pessoaX, pessoaY);
@@ -223,17 +227,14 @@ public class Ambiente {
     }
 
     private void moverPessoaNaMatriz(Pessoa pessoa, int newX, int newY) {
-        synchronized (ambiente) {
-            if (ambiente[newX][newY] == null) {
-                ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
-                pessoa.posicao = List.of(newX, newY);
-                ambiente[newX][newY] = pessoa.getNome();
-                imprimirSala();
-            }
+        if (mapa[newX][newY] == null) {
+            mapa[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
+            pessoa.posicao = List.of(newX, newY);
+            mapa[newX][newY] = pessoa.getNome();
         }
     }
 
-    private void checarBugBandido() {
+    private int obterPessoasNaSala() {
         int pessoasContadas = 0;
 
         for (int i = 0; i < tamanhoAmbiente; i++) {
@@ -243,8 +244,8 @@ public class Ambiente {
                 }
             }
         }
-        if (pessoasContadas != pessoas)
-            System.out.println("DEU RUIM");
+
+        return pessoasContadas;
     }
 }
 
