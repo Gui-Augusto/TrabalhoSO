@@ -3,8 +3,8 @@ package ambiente;
 import java.util.List;
 
 public class Porta {
-    String nome;
-    List<Integer> posicao;
+    private String nome;
+    private List<Integer> posicao;
 
     public Porta(String nome) {
         this.nome = nome;

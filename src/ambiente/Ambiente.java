@@ -6,11 +6,11 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
 public class Ambiente {
-    int pessoas;
+    public int pessoas;
     public int portas;
-    int tamanhoAmbiente;
-    int tempo;
-    final String[][] mapa;
+    public int tamanhoAmbiente;
+    public int tempo;
+    public final String[][] mapa;
 
     public Ambiente(int pessoas, int portas, int tamanhoAmbiente, int tempo) {
         this.pessoas = pessoas;
@@ -53,6 +53,7 @@ public class Ambiente {
                 });
                 threads.add(threadPessoa);
             }
+            CompletableFuture.allOf(threads.toArray(new CompletableFuture[threads.size()])).join();
             imprimirSala();
             Thread.sleep(1000);
         }
@@ -63,7 +64,7 @@ public class Ambiente {
             var threads = new ArrayList<CompletableFuture>();
 
             for (Pessoa pessoa : pessoasList) {
-                if(pessoa.saiu)
+                if(pessoa.getSaiu())
                     continue;
                 Porta portaProxima = encontrarPortaMaisProxima(pessoa, portaList);
                 var threadPessoa = CompletableFuture.runAsync(() -> {
@@ -148,10 +149,10 @@ public class Ambiente {
             novaPosicao = posicoesAdjacentes.get(rand.nextInt(posicoesAdjacentes.size()));
             synchronized (mapa) {
                 if (mapa[novaPosicao[0]][novaPosicao[1]] == null) {
-                    mapa[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
-                    pessoa.posicao.set(0, novaPosicao[0]);
-                    pessoa.posicao.set(1, novaPosicao[1]);
-                    mapa[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = pessoa.nome;
+                    mapa[pessoa.getPosicao().get(0)][pessoa.getPosicao().get(1)] = null;
+                    pessoa.getPosicao().set(0, novaPosicao[0]);
+                    pessoa.getPosicao().set(1, novaPosicao[1]);
+                    mapa[pessoa.getPosicao().get(0)][pessoa.getPosicao().get(1)] = pessoa.getNome();
                     flag = false;
                 }
             }
@@ -180,10 +181,10 @@ public class Ambiente {
     }
 
     public void sair(Porta destino, Pessoa pessoa) {
-        int portaX = destino.posicao.get(0);
-        int portaY = destino.posicao.get(1);
-        int pessoaX = pessoa.posicao.get(0);
-        int pessoaY = pessoa.posicao.get(1);
+        int portaX = destino.getPosicao().get(0);
+        int portaY = destino.getPosicao().get(1);
+        int pessoaX = pessoa.getPosicao().get(0);
+        int pessoaY = pessoa.getPosicao().get(1);
 
         synchronized (mapa) {
             if (pessoaX != portaX) {
@@ -194,10 +195,10 @@ public class Ambiente {
                 }
 
                 if (pessoaX == portaX && pessoaY == portaY) {
-                    mapa[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
-                    pessoa.posicao = List.of(pessoaX, pessoaY);
-                    System.out.println(pessoa.nome + " saiu da sala pela porta " + destino.getNome());
-                    pessoa.saiu = true;
+                    mapa[pessoa.getPosicao().get(0)][pessoa.getPosicao().get(1)] = null;
+                    pessoa.setPosicao(List.of(pessoaX, pessoaY));
+                    System.out.println(pessoa.getNome() + " saiu da sala pela porta " + destino.getNome());
+                    pessoa.setSaiu(true);
                 }
 
                 moverPessoaNaMatriz(pessoa, pessoaX, pessoaY);
@@ -211,10 +212,10 @@ public class Ambiente {
             }
 
             if (pessoaY == portaY) {
-                mapa[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
-                pessoa.posicao = List.of(pessoaX, pessoaY);
-                System.out.println(pessoa.nome + " saiu da sala pela porta " + destino.getNome());
-                pessoa.saiu = true;
+                mapa[pessoa.getPosicao().get(0)][pessoa.getPosicao().get(1)] = null;
+                pessoa.setPosicao(List.of(pessoaX, pessoaY));
+                System.out.println(pessoa.getNome() + " saiu da sala pela porta " + destino.getNome());
+                pessoa.setSaiu(true);
             }
 
             moverPessoaNaMatriz(pessoa, pessoaX, pessoaY);
@@ -223,8 +224,8 @@ public class Ambiente {
 
     private void moverPessoaNaMatriz(Pessoa pessoa, int newX, int newY) {
         if (mapa[newX][newY] == null) {
-            mapa[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
-            pessoa.posicao = List.of(newX, newY);
+            mapa[pessoa.getPosicao().get(0)][pessoa.getPosicao().get(1)] = null;
+            pessoa.setPosicao(List.of(newX, newY));
             mapa[newX][newY] = pessoa.getNome();
         }
     }
