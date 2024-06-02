@@ -41,7 +41,6 @@ public class Ambiente {
             mapa[posicaoValida.get(0)][posicaoValida.get(1)] = pessoa.getNome();
             pessoa.setPosicao(posicaoValida);
         }
-        imprimirSala();
 
         long startTime = System.currentTimeMillis();
         long duration = tempo * 1000L;
@@ -54,7 +53,6 @@ public class Ambiente {
                 });
                 threads.add(threadPessoa);
             }
-            CompletableFuture.allOf(threads.toArray(new CompletableFuture[threads.size()])).join();
             imprimirSala();
             Thread.sleep(1000);
         }
