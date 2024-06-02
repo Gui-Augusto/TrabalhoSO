@@ -11,7 +11,8 @@ public class Main {
 
 
     public static void main(String[] args) {
-        var ambiente = new Ambiente(2, 1, 4, 10);
+        var ambiente = new Ambiente(2, 5, 4, 5);
+
         try {
             ambiente.criarAmbiente();
         }catch (Exception e){

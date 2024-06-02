@@ -10,14 +10,14 @@ public class Ambiente {
     public int portas;
     int tamanhoAmbiente;
     int tempo;
-    final String[][] ambiente;
+    final String[][] mapa;
 
     public Ambiente(int pessoas, int portas, int tamanhoAmbiente, int tempo) {
         this.pessoas = pessoas;
         this.portas = portas;
         this.tamanhoAmbiente = tamanhoAmbiente;
         this.tempo = tempo;
-        this.ambiente = new String[tamanhoAmbiente][tamanhoAmbiente];
+        this.mapa = new String[tamanhoAmbiente][tamanhoAmbiente];
     }
 
     public void criarAmbiente() throws InterruptedException {
@@ -29,7 +29,7 @@ public class Ambiente {
             var posicaoValida = posicaoValida(false);
             portaList.add(porta);
 
-            ambiente[posicaoValida.get(0)][posicaoValida.get(1)] = porta.getNome();
+            mapa[posicaoValida.get(0)][posicaoValida.get(1)] = porta.getNome();
             porta.setPosicao(posicaoValida);
         }
 
@@ -38,7 +38,7 @@ public class Ambiente {
             var posicaoValida = posicaoValida(true);
             pessoasList.add(pessoa);
 
-            ambiente[posicaoValida.get(0)][posicaoValida.get(1)] = pessoa.getNome();
+            mapa[posicaoValida.get(0)][posicaoValida.get(1)] = pessoa.getNome();
             pessoa.setPosicao(posicaoValida);
         }
         imprimirSala();
@@ -69,10 +69,7 @@ public class Ambiente {
                     continue;
                 Porta portaProxima = encontrarPortaMaisProxima(pessoa, portaList);
                 var threadPessoa = CompletableFuture.runAsync(() -> {
-
-                    while (pessoa.getPosicao().get(0) != portaProxima.getPosicao().get(0) || pessoa.getPosicao().get(1) != portaProxima.getPosicao().get(1)) {
-                        sair(portaProxima, pessoa);
-                    }
+                    sair(portaProxima, pessoa);
                 });
                 threads.add(threadPessoa);
             }
@@ -93,7 +90,7 @@ public class Ambiente {
         while (flag) {
             numeroAleatorioUm = rand.nextInt(tamanhoAmbiente);
             numeroAleatorioDois = rand.nextInt(tamanhoAmbiente);
-            if (ambiente[numeroAleatorioUm][numeroAleatorioDois] == null) {
+            if (mapa[numeroAleatorioUm][numeroAleatorioDois] == null) {
 
                 if (isPessoa) {
                     flag = false;
@@ -112,19 +109,19 @@ public class Ambiente {
 
 
     public void imprimirSala() {
-        if (ambiente == null || ambiente.length == 0 || ambiente[0].length == 0) {
+        if (mapa == null || mapa.length == 0 || mapa[0].length == 0) {
             System.out.println("A matriz está vazia.");
             return;
         }
-        int tamanho = ambiente.length;
+        int tamanho = mapa.length;
 
         System.out.println("Sala:");
         for (int i = 0; i < tamanho; i++) {
             for (int j = 0; j < tamanho; j++) {
-                if (ambiente[i][j] == null) {
+                if (mapa[i][j] == null) {
                     System.out.print("_ \t");
                 } else {
-                    System.out.print(ambiente[i][j] + "\t");
+                    System.out.print(mapa[i][j] + "\t");
                 }
             }
             System.out.println();
@@ -136,8 +133,8 @@ public class Ambiente {
         List<int[]> posicoesAdjacentes = new ArrayList<>();
         var flag = true;
         int[] novaPosicao;
-        int numLinhas = ambiente.length;
-        int numColunas = ambiente[0].length;
+        int numLinhas = mapa.length;
+        int numColunas = mapa[0].length;
 
         int linha = pessoa.getPosicao().get(0);
         int coluna = pessoa.getPosicao().get(1);
@@ -151,12 +148,12 @@ public class Ambiente {
 
         while (flag) {
             novaPosicao = posicoesAdjacentes.get(rand.nextInt(posicoesAdjacentes.size()));
-            synchronized (ambiente) {
-                if (ambiente[novaPosicao[0]][novaPosicao[1]] == null) {
-                    ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
+            synchronized (mapa) {
+                if (mapa[novaPosicao[0]][novaPosicao[1]] == null) {
+                    mapa[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
                     pessoa.posicao.set(0, novaPosicao[0]);
                     pessoa.posicao.set(1, novaPosicao[1]);
-                    ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = pessoa.nome;
+                    mapa[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = pessoa.nome;
                     flag = false;
                 }
             }
@@ -216,7 +213,7 @@ public class Ambiente {
             }
 
             if (pessoaY == portaY) {
-                ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
+                mapa[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
                 pessoa.posicao = List.of(pessoaX, pessoaY);
                 System.out.println(pessoa.nome + " saiu da sala pela porta " + destino.getNome());
                 pessoa.saiu = true;
@@ -239,7 +236,7 @@ public class Ambiente {
 
         for (int i = 0; i < tamanhoAmbiente; i++) {
             for (int j = 0; j < tamanhoAmbiente; j++) {
-                if (ambiente[i][j] != null && ambiente[i][j].contains("P")) {
+                if (mapa[i][j] != null && mapa[i][j].contains("P")) {
                     pessoasContadas++;
                 }
             }
