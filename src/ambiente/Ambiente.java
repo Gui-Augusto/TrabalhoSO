@@ -61,15 +61,21 @@ public class Ambiente {
         }
 
         if (System.currentTimeMillis() - startTime > duration) {
+            var threads = new ArrayList<CompletableFuture>();
             System.out.println("Tempo acabou, saindo da sala.");
 
             for (Pessoa pessoa : pessoasList) {
                 Porta portaProxima = encontrarPortaMaisProxima(pessoa, portaList);
+                var threadPessoa = CompletableFuture.runAsync(() -> {
 
-                while (pessoa.getPosicao().get(0) != portaProxima.getPosicao().get(0) || pessoa.getPosicao().get(1) != portaProxima.getPosicao().get(1)) {
-                    sair(portaProxima, pessoa);
-                }
+                    while (pessoa.getPosicao().get(0) != portaProxima.getPosicao().get(0) || pessoa.getPosicao().get(1) != portaProxima.getPosicao().get(1)) {
+                        sair(portaProxima, pessoa);
+                    }
+                });
+                threads.add(threadPessoa);
             }
+            CompletableFuture.allOf(threads.toArray(new CompletableFuture[threads.size()])).join();
+            imprimirSala();
         }
     }
 
@@ -125,14 +131,13 @@ public class Ambiente {
     public void movimentarAmbiente(Pessoa pessoa) {
         Random rand = new Random();
         List<int[]> posicoesAdjacentes = new ArrayList<>();
-        int linha = pessoa.getPosicao().get(0);
-        int coluna = pessoa.getPosicao().get(1);
         var flag = true;
         int[] novaPosicao;
-
         int numLinhas = ambiente.length;
         int numColunas = ambiente[0].length;
 
+        int linha = pessoa.getPosicao().get(0);
+        int coluna = pessoa.getPosicao().get(1);
         for (int i = linha - 1; i <= linha + 1; i++) {
             for (int j = coluna - 1; j <= coluna + 1; j++) {
                 if (i >= 0 && i < numLinhas && j >= 0 && j < numColunas) {
@@ -143,12 +148,14 @@ public class Ambiente {
 
         while (flag) {
             novaPosicao = posicoesAdjacentes.get(rand.nextInt(posicoesAdjacentes.size()));
-            if (ambiente[novaPosicao[0]][novaPosicao[1]] == null) {
-                ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
-                pessoa.posicao.set(0, novaPosicao[0]);
-                pessoa.posicao.set(1, novaPosicao[1]);
-                ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = pessoa.getNome();
-                flag = false;
+            synchronized (ambiente) {
+                if (ambiente[novaPosicao[0]][novaPosicao[1]] == null) {
+                    ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
+                    pessoa.posicao.set(0, novaPosicao[0]);
+                    pessoa.posicao.set(1, novaPosicao[1]);
+                    ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = pessoa.nome;
+                    flag = false;
+                }
             }
         }
     }
@@ -190,8 +197,7 @@ public class Ambiente {
             if (pessoaX == portaX && pessoaY == portaY) {
                 ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
                 pessoa.posicao = List.of(pessoaX, pessoaY);
-                System.out.println(pessoa.nome + " saiu da sala pela porta "+destino.getNome());
-                imprimirSala();
+                System.out.println(pessoa.nome + " saiu da sala pela porta " + destino.getNome());
                 break;
             }
 
@@ -205,11 +211,10 @@ public class Ambiente {
                 pessoaY--;
             }
 
-            if (pessoaX == portaX && pessoaY == portaY) {
+            if (pessoaY == portaY) {
                 ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
                 pessoa.posicao = List.of(pessoaX, pessoaY);
-                System.out.println(pessoa.nome + " saiu da sala pela porta "+destino.getNome());
-                imprimirSala();
+                System.out.println(pessoa.nome + " saiu da sala pela porta " + destino.getNome());
                 break;
             }
 
@@ -218,17 +223,28 @@ public class Ambiente {
     }
 
     private void moverPessoaNaMatriz(Pessoa pessoa, int newX, int newY) {
-        var flag = true;
-        while (flag) {
+        synchronized (ambiente) {
             if (ambiente[newX][newY] == null) {
                 ambiente[pessoa.posicao.get(0)][pessoa.posicao.get(1)] = null;
                 pessoa.posicao = List.of(newX, newY);
                 ambiente[newX][newY] = pessoa.getNome();
                 imprimirSala();
-                flag = false;
             }
         }
     }
 
+    private void checarBugBandido() {
+        int pessoasContadas = 0;
+
+        for (int i = 0; i < tamanhoAmbiente; i++) {
+            for (int j = 0; j < tamanhoAmbiente; j++) {
+                if (ambiente[i][j] != null && ambiente[i][j].contains("P")) {
+                    pessoasContadas++;
+                }
+            }
+        }
+        if (pessoasContadas != pessoas)
+            System.out.println("DEU RUIM");
+    }
 }
 
