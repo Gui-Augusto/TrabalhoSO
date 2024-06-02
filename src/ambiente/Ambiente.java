@@ -3,13 +3,14 @@ package ambiente;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 
 public class Ambiente {
     int pessoas;
     int portas;
     int tamanhoAmbiente;
     int tempo;
-    String[][] ambiente;
+    final String[][] ambiente;
 
     public Ambiente(int pessoas, int portas, int tamanhoAmbiente, int tempo) {
         this.pessoas = pessoas;
@@ -46,10 +47,16 @@ public class Ambiente {
         long duration = tempo * 1000L;
 
         while (System.currentTimeMillis() - startTime <= duration) {
+            var threads = new ArrayList<CompletableFuture>();
             for (Pessoa pessoa : pessoasList) {
-                movimentarAmbiente(ambiente, pessoa);
+                var threadPessoa = CompletableFuture.runAsync(() -> {
+                    movimentarAmbiente(pessoa);
+                });
+                threads.add(threadPessoa);
             }
+            CompletableFuture.allOf(threads.toArray(new CompletableFuture[threads.size()])).join();
             imprimirSala();
+            checarBugBandido();
             Thread.sleep(1000);
         }
 
@@ -115,7 +122,7 @@ public class Ambiente {
         }
     }
 
-    public void movimentarAmbiente(String[][] ambiente, Pessoa pessoa) throws InterruptedException {
+    public void movimentarAmbiente(Pessoa pessoa) {
         Random rand = new Random();
         List<int[]> posicoesAdjacentes = new ArrayList<>();
         int linha = pessoa.getPosicao().get(0);
