@@ -7,11 +7,9 @@ import java.util.List;
 
 public class Main {
 
-    static List<Porta> portaList = new ArrayList<>();
-
 
     public static void main(String[] args) {
-        var ambiente = new Ambiente(2, 5, 4, 5);
+        var ambiente = new Ambiente(15, 1, 3, 5);
 
         try {
             ambiente.criarAmbiente();
